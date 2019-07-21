@@ -1,5 +1,5 @@
 [ req ]
-default_bits       = 2048
+default_bits       = 4096
 distinguished_name = req_distinguished_name
 req_extensions     = req_ext
 prompt             = no
@@ -17,4 +17,7 @@ subjectAltName = @alt_names
 [alt_names]
 {% for san in item.dns -%}
 DNS.{{ loop.index }} = {{ san }}
+{% endfor %}
+{% for san in item.ip -%}
+IP.{{ loop.index }} = {{ san }}
 {% endfor %}

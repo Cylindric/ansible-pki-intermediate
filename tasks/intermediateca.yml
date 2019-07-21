@@ -78,7 +78,9 @@
   stat:
     path: "{{ int_path }}/certs/int.pem"
   register: int_cert_exists
-  tags: certs
+  tags: 
+    - certs
+    - ocsp
 
 
 # Only create a new certificate if there isn't already one.
@@ -131,4 +133,14 @@
       chdir: "{{ int_path }}"
     tags: certs
   
+  # - name: "Upload certificate for OCSP {{ item.name }}"
+  #   shell: "scp {{ int_path }}/certs/int.pem {{ item.scp_host }}:{{ item.scp_path }}"
+  #   with_items: "{{ ocsp_distribution }}"
+  #   tags: ocsp
+  
+  - name: "Upload CRL {{ item.name }}"
+    shell: "scp {{ int_path }}/crl/int.crl.pem {{ item.scp_host }}:{{ item.scp_path }}"
+    with_items: "{{ crl_distribution }}"
+    tags: ocsp
+
   when: int_cert_exists.stat.exists == true

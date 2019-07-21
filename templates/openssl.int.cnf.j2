@@ -21,6 +21,7 @@ cert_opt          = ca_default
 default_days      = 375
 preserve          = no
 policy            = policy_loose
+copy_extensions   = copy
 
 [ policy_loose ]
 countryName            = optional
@@ -34,7 +35,7 @@ emailAddress           = optional
 [ req ]
 prompt                 = no
 string_mask            = utf8only
-default_bits           = 2048
+default_bits           = 4096
 default_md             = sha256
 distinguished_name     = req_distinguished_name
 x509_extensions        = v3_ca
@@ -52,16 +53,32 @@ subjectKeyIdentifier   = hash
 authorityKeyIdentifier = keyid:always,issuer
 basicConstraints       = critical, CA:true, pathlen:0
 keyUsage               = critical, digitalSignature, cRLSign, keyCertSign
+crlDistributionPoints  = @crl_section
+authorityInfoAccess    = @ocsp_section
+
+[ server_cert ]
+basicConstraints = CA:FALSE
+nsCertType = server
+nsComment = "OpenSSL Generated Server Certificate"
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid,issuer:always
+keyUsage = critical, digitalSignature, keyEncipherment
+extendedKeyUsage = serverAuth
+crlDistributionPoints  = @crl_section
+# authorityInfoAccess    = @ocsp_section
 
 [ crl_ext ]
 authorityKeyIdentifier = keyid:always
 
 [crl_section]
-URI.0 = http://pki.cylindric.net/CylCorpIntermediate.crl
-URI.1 = http://pki.cylindric.net/CylCorpIntermediate.crl
+{% for crl in crl_distribution -%}
+URI.{{ loop.index0 }} = {{ crl.url }}
+{% endfor %}
 
 [ocsp_section]
-caIssuers;URI.0 = http://pki.cylindric.net/CylCorpIntermediate.crt
-caIssuers;URI.1 = http://pki.backup.cylindric.net/CylCorpIntermediate.crt
-OCSP;URI.0 = http://pki.cylindric.net/ocsp/
-OCSP;URI.1 = http://pki.backup.cylindric.net/ocsp/
+{% for ocsp in ocsp_distribution -%}
+caIssuers;URI.{{ loop.index0 }} = {{ ocsp.issuer_url }}
+{% endfor %}
+{% for ocsp in ocsp_distribution -%}
+OCSP;URI.{{ loop.index0 }} = {{ ocsp.url }}
+{% endfor %}

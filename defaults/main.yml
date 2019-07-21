@@ -3,9 +3,31 @@ pki_basepath: /ca
 int_path: "/ca/int-ca"
 pki_int_pass: intpass
 
+crl_distribution:
+    - name: crl0
+      scp_host: direct.cylindric.net
+      scp_user: root
+      scp_path: /var/www/pki.cylindric.net/html/CylCorpIntermediate.crl
+      url: https://pki.cylindric.net/CylCorpIntermediate.crl
+    - name: crl1
+      scp_host: direct.cylindric.net
+      scp_user: root
+      scp_path: /var/www/pki.cylindric.net/html/CylCorpIntermediate1.crl
+      url: https://pki.cylindric.net/CylCorpIntermediate1.crl
+
+ocsp_distribution:
+    - name: ocsp0
+      issuer_url: http://pki.cylindric.net/CylCorpIntermediate.crt
+      url: https://pki.cylindric.net/ocsp/
+      scp_host: root@direct.cylindric.net
+      scp_path: /var/www/pki.cylindric.net/html/CylCorpIntermediate.crt
+      index_scp_path: /var/www/pki.cylindric.net/html/ocsp/index.txt
 
 # Certificates to auto-generate
 pki_certificates:
-    - {name: hassio, dns: [hassio.home.cylindric.net, config.home.cylindric.net]}
-    - {name: mqtt, dns: [mqtt.home.cylindric.net]}
-    - {name: networkpi, dns: [networkpi.home.cylindric.net, pihole.home.cylindric.net]}
+    - {name: router, dns: [router.home.cylindric.net], ip: ["172.29.14.1"]}
+    - {name: hassio, dns: [hassio.home.cylindric.net], ip: ["172.29.14.116"]}
+    - {name: networkpi, dns: [networkpi.home.cylindric.net, pihole.home.cylindric.net], ip: ["172.29.14.115"]}
+    - {name: sabnzbd, dns: [sabnzbd.home.cylindric.net], ip: ["172.29.14.100"]}
+    - {name: sonarr, dns: [sonarr.home.cylindric.net], ip: ["172.29.14.100"]}
+    - {name: radarr, dns: [radarr.home.cylindric.net], ip: ["172.29.14.100"]}

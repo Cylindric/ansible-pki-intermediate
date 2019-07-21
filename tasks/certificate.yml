@@ -1,10 +1,15 @@
 ---
 - name: "Set variables for {{ item.name }}"
   set_fact:
-    cert_key: "{{ int_path }}/certs/{{ item.name }}.key.pem"
+    cert_key: "{{ int_path }}/certs/{{ item.name }}-key.pem"
+    cert_chain: "{{ int_path }}/certs/{{ item.name }}-chain.pem"
     cert_pem: "{{ int_path }}/certs/{{ item.name }}.pem"
     cert_cnf: "{{ int_path }}/csr/{{ item.name }}.cnf"
     cert_csr: "{{ int_path }}/csr/{{ item.name }}.csr"
+    cert_p12: "{{ int_path }}/certs/{{ item.name }}.p12"
+    inter_pem: "{{ int_path }}/certs/int.pem"
+    root_pem: "{{ int_path }}/certs/root.pem"
+    ca_chain: "{{ int_path }}/certs/ca-chain.pem"
 
 - name: "See if cert {{ item.name }} already exists"
   stat:
@@ -21,7 +26,7 @@
 
   - name: "Create private key for {{ item.name }}"
     shell: |
-      openssl genrsa -out {{ cert_key }} 2048
+      openssl genrsa -out {{ cert_key }} 4096
     args:
       chdir: "{{ int_path }}"
       creates: "{{ cert_key }}"
@@ -31,7 +36,7 @@
       path: "{{ cert_key }}"
       mode: 0400
 
-  - name: "Create CSR for {{ item.name }}"
+  - name: "Create CSR for {{ item.name }} in {{ cert_csr }}"
     shell: |
       openssl req \
               -new \
@@ -43,28 +48,39 @@
       chdir: "{{ int_path }}"
       creates: "{{ cert_csr }}"
 
-  - name: "Clean config for {{ item.name }}"
-    file:
-      path: "{{ cert_cnf }}"
-      state: absent
-
   - name: "Sign certificate for {{ item.name }}"
     shell: |
       openssl ca \
               -batch \
               -config openssl.cnf \
               -notext \
-              -in {{ cert_csr }} \
               -passin pass:{{ pki_int_pass }} \
+              -extensions server_cert \
+              -in {{ cert_csr }} \
               -out {{ cert_pem }}
     args:
       chdir: "{{ int_path }}"
       creates: "{{ cert_pem }}"
 
-  - name: "Clean CSR for {{ item.name }}"
+  - name: "Create PKCS#12 certificate for {{ item.name }}"
+    shell: "openssl pkcs12 -export -inkey {{ cert_key }} -in {{ cert_pem }} -certfile {{ ca_chain }} -passout pass: -out {{ cert_p12 }}"
+    args:
+      chdir: "{{ int_path }}"
+      creates: "{{ cert_p12 }}"
+
+  - name: "Make sure there's a certificate chain file for {{ item.name }}"
+    shell: |
+      cat {{ cert_pem }} {{ inter_pem }} {{ root_pem }} > {{ cert_chain }}
+    args:
+      chdir: "{{ int_path }}"
+      creates: "{{ cert_chain }}"
+
+  - name: "Clean configs for {{ item.name }}"
     file:
-      path: "{{ cert_csr }}"
+      path: "{{ item }}"
       state: absent
+    with_items:
+      - "{{ cert_cnf }}"
+      - "{{ cert_csr }}"
 
   when: cert_exists.stat.exists == false
-
